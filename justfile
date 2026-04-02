@@ -4,12 +4,21 @@ NUM := "256 4096 8192 65535 252140 4194304"
 
 WC_SINGLE := "check_mmap_branchless_ptr"
 
-WC_THREADED := "check_mmap_branchless_threads"
+WC_THREADED := "check_mmap_branchless_threads check_mmap_branchless_threads_no_populate check_mmap_simd_thread"
 THREADS := "1 2 4 8 16 32 64"
 
 benchmark:
-    g++ benchmark.cc -O2 -std=c++23 -isystem benchmark/include -Lbenchmark/build/src -lbenchmark -lpthread -o benchmark-wc
+    g++ benchmark.cc -O2 -std=c++23 -mavx2 -isystem benchmark/include -Lbenchmark/build/src -lbenchmark -lpthread -o benchmark-wc
     ./benchmark-wc
+
+build_threaded:
+    mkdir -p {{BUILD_DIR}}
+    for impl in {{WC_THREADED}}; do \
+        for t in {{THREADS}}; do \
+            just build "$impl" "$t"; \
+        done \
+    done
+
 
 build_all:
     mkdir -p {{BUILD_DIR}}
@@ -21,19 +30,18 @@ build_all:
     for impl in {{WC_SINGLE}}; do \
         just build "$impl" ""; \
     done
-    for impl in {{WC_THREADED}}; do \
-        for t in {{THREADS}}; do \
-            just build "$impl" "$t"; \
-        done \
-    done
+    just build_threaded
 
 build FUNCTION NUM:
     @echo "Building {{FUNCTION}} {{NUM}}"
     if [ -z "{{NUM}}" ]; then \
-        g++ -DFUNCTION={{FUNCTION}} main.cc -O2 -std=c++23 -o {{BUILD_DIR}}wc_{{FUNCTION}}_{{NUM}}; \
+        g++ -DFUNCTION={{FUNCTION}} main.cc -O2 -std=c++23 -mavx2 -o {{BUILD_DIR}}wc_{{FUNCTION}}_{{NUM}}; \
     else \
-        g++ -DFUNCTION={{FUNCTION}} -DNUM={{NUM}} main.cc -O2 -std=c++23 -o {{BUILD_DIR}}wc_{{FUNCTION}}_{{NUM}}; \
+        g++ -DFUNCTION={{FUNCTION}} -DNUM={{NUM}} main.cc -O2 -mavx2 -std=c++23 -o {{BUILD_DIR}}wc_{{FUNCTION}}_{{NUM}}; \
     fi
+
+RUNS := "500"
+WARMUP := "5"
 
 hyperfine FILE:
     @bash -c ' \
@@ -42,5 +50,5 @@ hyperfine FILE:
             cmds+=("$bin {{FILE}}"); \
         done; \
         echo "Commands: ${cmds[@]}"; \
-        hyperfine --warmup 3 -N "${cmds[@]}"; \
+        hyperfine --warmup {{WARMUP}} --runs {{RUNS}} -N "${cmds[@]}"; \
     '

@@ -5,7 +5,7 @@
 #define BENCHMARK_WC(NAME, FUNCTION) \
 static void BM_wc_check_##NAME(benchmark::State& state) { \
     for (auto _ : state) { \
-        auto file_name = std::string("pg2600.txt"); \
+        auto file_name = std::string("test_data/pg2600.txt"); \
         auto count = FUNCTION(file_name); \
         benchmark::DoNotOptimize(count); \
     } \
@@ -49,5 +49,21 @@ BENCHMARK_WC(mmap_branchless_threads_8, check_mmap_branchless_threads<8>);
 BENCHMARK_WC(mmap_branchless_threads_16, check_mmap_branchless_threads<16>);
 BENCHMARK_WC(mmap_branchless_threads_32, check_mmap_branchless_threads<32>);
 BENCHMARK_WC(mmap_branchless_threads_64, check_mmap_branchless_threads<64>);
+
+BENCHMARK_WC(mmap_branchless_threads_no_populate_1, check_mmap_branchless_threads_no_populate<1>);
+BENCHMARK_WC(mmap_branchless_threads_no_populate_2, check_mmap_branchless_threads_no_populate<2>);
+BENCHMARK_WC(mmap_branchless_threads_no_populate_4, check_mmap_branchless_threads_no_populate<4>);
+BENCHMARK_WC(mmap_branchless_threads_no_populate_8, check_mmap_branchless_threads_no_populate<8>);
+BENCHMARK_WC(mmap_branchless_threads_no_populate_16, check_mmap_branchless_threads_no_populate<16>);
+BENCHMARK_WC(mmap_branchless_threads_no_populate_32, check_mmap_branchless_threads_no_populate<32>);
+BENCHMARK_WC(mmap_branchless_threads_no_populate_64, check_mmap_branchless_threads_no_populate<64>);
+
+BENCHMARK_WC(mmap_simd_threads_1, check_mmap_simd_thread<1>);
+BENCHMARK_WC(mmap_simd_threads_2, check_mmap_simd_thread<2>);
+BENCHMARK_WC(mmap_simd_threads_4, check_mmap_simd_thread<4>);
+BENCHMARK_WC(mmap_simd_threads_8, check_mmap_simd_thread<8>);
+BENCHMARK_WC(mmap_simd_threads_16, check_mmap_simd_thread<16>);
+BENCHMARK_WC(mmap_simd_threads_32, check_mmap_simd_thread<32>);
+BENCHMARK_WC(mmap_simd_threads_64, check_mmap_simd_thread<64>);
 
 BENCHMARK_MAIN();
