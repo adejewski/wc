@@ -8,7 +8,7 @@ WC_THREADED := "check_mmap_branchless_threads check_mmap_branchless_threads_no_p
 THREADS := "1 2 4 8 16 32 64"
 
 benchmark:
-    g++ benchmark.cc -O2 -std=c++23 -mavx2 -isystem benchmark/include -Lbenchmark/build/src -lbenchmark -lpthread -o benchmark-wc
+    g++ benchmark.cc -O3 -std=c++23 -mavx2 -isystem benchmark/include -Lbenchmark/build/src -lbenchmark -lpthread -o benchmark-wc
     ./benchmark-wc
 
 build_threaded:
@@ -35,9 +35,9 @@ build_all:
 build FUNCTION NUM:
     @echo "Building {{FUNCTION}} {{NUM}}"
     if [ -z "{{NUM}}" ]; then \
-        g++ -DFUNCTION={{FUNCTION}} main.cc -O2 -std=c++23 -mavx2 -o {{BUILD_DIR}}wc_{{FUNCTION}}_{{NUM}}; \
+        g++ -DFUNCTION={{FUNCTION}} main.cc -O3 -std=c++23 -mavx2 -o {{BUILD_DIR}}wc_{{FUNCTION}}_{{NUM}}; \
     else \
-        g++ -DFUNCTION={{FUNCTION}} -DNUM={{NUM}} main.cc -O2 -mavx2 -std=c++23 -o {{BUILD_DIR}}wc_{{FUNCTION}}_{{NUM}}; \
+        g++ -DFUNCTION={{FUNCTION}} -DNUM={{NUM}} main.cc -O3 -mavx2 -std=c++23 -o {{BUILD_DIR}}wc_{{FUNCTION}}_{{NUM}}; \
     fi
 
 RUNS := "500"
@@ -52,3 +52,7 @@ hyperfine FILE:
         echo "Commands: ${cmds[@]}"; \
         hyperfine --warmup {{WARMUP}} --runs {{RUNS}} -N "${cmds[@]}"; \
     '
+
+test:
+    g++ -std=c++23 test.cc -mavx2 -lgtest -lgtest_main -lpthread -o test_wc
+    ./test_wc

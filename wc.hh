@@ -14,7 +14,16 @@ struct Count{
     uint bytes;
     uint words;
     uint lines;
+
+    bool operator==(const Count& other) const noexcept {
+        if(bytes != other.bytes) return false;
+        if(words != other.words) return false;
+        if(lines != other.lines) return false;
+        return true;
+    }
 };
+// Avoid hitting same cache line
+struct alignas(64) PaddedCount : Count {};
 
 constexpr auto newline_lut = [] {
     std::array<unsigned char, 256> lut{};
@@ -25,9 +34,13 @@ constexpr auto newline_lut = [] {
 
 constexpr auto is_word = [] {
     std::array<unsigned char, 256> lut{};
-    for (int i = 33; i <= 126; i++) {
+    for (int i = 0; i <= 255; i++) {
         lut[i] = 1;
     }
+    lut[' '] = 0;
+    lut['\t'] = 0;
+    lut['\n'] = 0;
+    lut['\r'] = 0;
     return lut;
 }();
 
@@ -36,6 +49,7 @@ constexpr auto is_delim = [] {
     lut[' '] = 1;
     lut['\t'] = 1;
     lut['\n'] = 1;
+    lut['\r'] = 1;
     return lut;
 }();
 
@@ -54,29 +68,23 @@ template<size_t BUFFER_SIZE>
         result.bytes += stream.gcount();
         for(auto i = 0; i < stream.gcount(); ++i){
             switch(buffer[i]){
-                case ' ': {
-                    result.words += word_started;
-                    word_started = 0;
-                } break;
+                case '\n': {
+                    result.lines++;
+                }
+                case ' ': 
+                case '\r':
                 case '\t': {
                     result.words += word_started;
                     word_started = 0;
                 } break;
-                case '\n': {
-                    result.lines++;
-                    result.words += word_started;
-                    word_started = 0;
-                } break;
                 default: {
-                    if (33 <= buffer[i] && buffer[i] <= 126) {
-                        word_started = 1;
-                    }
+                    word_started = 1;
                 } break;
             }
         }
-        result.words += word_started;
-
     }
+    result.words += word_started;
+    stream.close();
     return result;
 }
 
@@ -96,29 +104,22 @@ template<size_t BUFFER_SIZE>
         result.bytes += n;
         for(auto i = 0; i < n; ++i){
             switch(buffer[i]){
-                case ' ': {
-                    result.words += word_started;
-                    word_started = 0;
-                } break;
-                case '\t': {
-                    result.words += word_started;
-                    word_started = 0;
-                } break;
                 case '\n': {
                     result.lines++;
+                }
+                case ' ':
+                case '\t':
+                case '\r': {
                     result.words += word_started;
                     word_started = 0;
                 } break;
                 default: {
-                    if (33 <= buffer[i] && buffer[i] <= 126) {
-                        word_started = 1;
-                    }
+                    word_started = 1;
                 } break;
             }
         }
-        result.words += word_started;
-
     }
+    result.words += word_started;
     close(fd);
     return result;
 }
@@ -143,9 +144,8 @@ template<size_t BUFFER_SIZE>
             result.words += word_started & is_delim[c];
             word_started = is_word[c];
         }
-        result.words += word_started;
-
     }
+    result.words += word_started;
     close(fd);
     return result;
 }
@@ -173,9 +173,8 @@ template<size_t BUFFER_SIZE>
             result.words += word_started & is_delim[c];
             word_started = is_word[c];
         }
-        result.words += word_started;
-
     }
+    result.words += word_started;
     close(fd);
     return result;
 }
@@ -243,9 +242,9 @@ template<size_t THREAD_NUM>
 
     std::vector<std::thread> threads;
     threads.reserve(THREAD_NUM);
-    std::vector<bool> starts(THREAD_NUM, false);
-    std::vector<bool> ends(THREAD_NUM, false);
-    std::vector<Count> count(THREAD_NUM, {0, 0, 0});
+    std::vector<uint8_t> starts(THREAD_NUM, false);
+    std::vector<uint8_t> ends(THREAD_NUM, false);
+    std::vector<PaddedCount> count(THREAD_NUM, {0, 0, 0});
 
     auto chunk_size = size / THREAD_NUM;
     for(auto i = 0; i < THREAD_NUM; ++i){
@@ -306,9 +305,9 @@ template<size_t THREAD_NUM>
 
     std::vector<std::thread> threads;
     threads.reserve(THREAD_NUM);
-    std::vector<bool> starts(THREAD_NUM, false);
-    std::vector<bool> ends(THREAD_NUM, false);
-    std::vector<Count> count(THREAD_NUM, {0, 0, 0});
+    std::vector<uint8_t> starts(THREAD_NUM, false);
+    std::vector<uint8_t> ends(THREAD_NUM, false);
+    std::vector<PaddedCount> count(THREAD_NUM, {0, 0, 0});
 
     auto chunk_size = size / THREAD_NUM;
     for(auto i = 0; i < THREAD_NUM; ++i){
@@ -369,9 +368,9 @@ template<size_t THREAD_NUM>
 
     std::vector<std::thread> threads;
     threads.reserve(THREAD_NUM);
-    std::vector<bool> starts(THREAD_NUM, false);
-    std::vector<bool> ends(THREAD_NUM, false);
-    std::vector<Count> count(THREAD_NUM, {0, 0, 0});
+    std::vector<uint8_t> starts(THREAD_NUM, false);
+    std::vector<uint8_t> ends(THREAD_NUM, false);
+    std::vector<PaddedCount> count(THREAD_NUM, {0, 0, 0});
 
     auto chunk_size = size / THREAD_NUM;
     for(auto i = 0; i < THREAD_NUM; ++i){
@@ -379,6 +378,7 @@ template<size_t THREAD_NUM>
                 __m256i space = _mm256_set1_epi8(' ');
                 __m256i newline = _mm256_set1_epi8('\n');
                 __m256i tab = _mm256_set1_epi8('\t');
+                __m256i cr = _mm256_set1_epi8('\r');
 
                 unsigned char* ptr = buffer + i * chunk_size;
                 unsigned char* end = (i == THREAD_NUM - 1) ? buffer + size : ptr + chunk_size;
@@ -387,18 +387,18 @@ template<size_t THREAD_NUM>
                 unsigned char prev_space = 1;
                 for(; ptr + 32 <= end; ptr += 32) 
                 {
-                __m256i data = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(ptr));
-                auto newlines = _mm256_movemask_epi8(_mm256_cmpeq_epi8(data, newline));
-                count[i].lines += std::popcount((uint)newlines);
+                    __m256i data = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(ptr));
+                    auto newlines = _mm256_movemask_epi8(_mm256_cmpeq_epi8(data, newline));
+                    count[i].lines += std::popcount((uint)newlines);
 
-                auto is_whitespace = newlines | _mm256_movemask_epi8(_mm256_cmpeq_epi8(data, space)) | _mm256_movemask_epi8(_mm256_cmpeq_epi8(data, tab));
+                    auto is_whitespace = newlines | _mm256_movemask_epi8(_mm256_cmpeq_epi8(data, space)) | _mm256_movemask_epi8(_mm256_cmpeq_epi8(data, tab)) | _mm256_movemask_epi8(_mm256_cmpeq_epi8(data, cr));
 
-                auto non_whitespace = (~is_whitespace) & 0xFFFFFFFF;
-                auto prev_whitespace = (is_whitespace << 1) | prev_space;
-                auto word_starts = non_whitespace & prev_whitespace;
+                    auto non_whitespace = (~is_whitespace) & 0xFFFFFFFF;
+                    auto prev_whitespace = (is_whitespace << 1) | prev_space;
+                    auto word_starts = non_whitespace & prev_whitespace;
 
-                count[i].words += std::popcount((uint)word_starts);
-                prev_space = (is_whitespace >> 31) & 1;
+                    count[i].words += std::popcount((uint)word_starts);
+                    prev_space = (is_whitespace >> 31) & 1;
                 }
 
                 while(ptr < end) {
