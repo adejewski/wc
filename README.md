@@ -1,6 +1,6 @@
 # This repository is meant to benchmark my own implementation of wc
 
-I was trying different implementaitions to show how to speed up simple application like wc. Of course it is not 1:1 replacment for system wc because we do not cover all edge cases here.
+I was trying different implementaitions to show how to speed up simple application like wc. Of course it is not 1:1 replacment for system wc because we do not cover all edge cases here. Nevertheless for the prepared test_data my implementation and system `wc` gives exactly the same results.
 
 # Running example 
 To test it `just build_all` and `just hyperfine ./test_data/pg2600.txt` from main folder of this repository.
@@ -60,3 +60,9 @@ Summary
     5.93 ± 2.01 times faster than build/wc_check_read_256 ./test_data/pg2600.txt
     6.46 ± 1.97 times faster than wc ./test_data/pg2600.txt
 ```
+
+# Hardware
+For testing I am using DELL Precision 3480 with i7-1370p Intel processor. This means that some of the threaded implementation might run on a E-cores, which probably can lower the result.
+
+# Summary
+Looks like my implmentation can be even 6.5x faster than system `wc` which is quite an achievement. Feel free to use this code however you want.
