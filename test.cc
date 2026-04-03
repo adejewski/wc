@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "wc.hh"
 
 // Data comes from `wc ./test_data/pg2600.txt`
@@ -74,4 +75,3 @@ TEST(check_mmap_simd_thread, pg2600) {
     EXPECT_EQ(check_mmap_simd_thread<32>(pg2600), expected_result_pg2600);
     EXPECT_EQ(check_mmap_simd_thread<64>(pg2600), expected_result_pg2600);
 }
-

@@ -1,16 +1,18 @@
 #include <benchmark/benchmark.h>
+
 #include <fstream>
+
 #include "wc.hh"
 
-#define BENCHMARK_WC(NAME, FUNCTION) \
-static void BM_wc_check_##NAME(benchmark::State& state) { \
-    for (auto _ : state) { \
-        auto file_name = std::string("test_data/pg2600.txt"); \
-        auto count = FUNCTION(file_name); \
-        benchmark::DoNotOptimize(count); \
-    } \
-} \
-BENCHMARK(BM_wc_check_##NAME);
+#define BENCHMARK_WC(NAME, FUNCTION)                              \
+    static void BM_wc_check_##NAME(benchmark::State& state) {     \
+        for (auto _ : state) {                                    \
+            auto file_name = std::string("test_data/pg2600.txt"); \
+            auto count = FUNCTION(file_name);                     \
+            benchmark::DoNotOptimize(count);                      \
+        }                                                         \
+    }                                                             \
+    BENCHMARK(BM_wc_check_##NAME);
 
 BENCHMARK_WC(stream_256, check_stream<256>);
 BENCHMARK_WC(stream_4096, check_stream<4096>);

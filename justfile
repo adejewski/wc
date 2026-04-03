@@ -56,3 +56,6 @@ hyperfine FILE:
 test:
     g++ -std=c++23 test.cc -mavx2 -lgtest -lgtest_main -lpthread -o test_wc
     ./test_wc
+
+format:
+    find . -iname '*.hh' -o -iname '*.cc' | xargs clang-format -i

@@ -1,5 +1,6 @@
-#include "wc.hh"
 #include <print>
+
+#include "wc.hh"
 
 #define ERR_NOT_ENOUGH_ARGUMENTS 1
 #ifdef NUM
@@ -17,4 +18,4 @@ int main(int argc, char* argv[]) {
     auto count = FUNCTION_NAME(file_name);
     std::print("{2} {1} {0} {3}\n", count.bytes, count.words, count.lines, file_name);
     return 0;
-} 
+}
