@@ -121,4 +121,4 @@ BM_wc_check_mmap_simd_threads_64                       911911 ns       886741 ns
 For testing I am using DELL Precision 3480 with i7-1370p Intel processor. This means that some of the threaded implementation might run on a E-cores, which probably can lower the result. In the results above you can see that I used `taskset -c 0-11` to make sure I am using P-cores only, it is not commited in the code.
 
 # Summary
-Looks like my implmentation can be even 6.5x faster than system `wc` which is quite an achievement. Feel free to use this code however you want.
+Looks like my implmentation can be even 4.0x faster than system `wc` which is quite an achievement. Feel free to use this code however you want.
