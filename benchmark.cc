@@ -12,7 +12,7 @@
             benchmark::DoNotOptimize(count);                      \
         }                                                         \
     }                                                             \
-    BENCHMARK(BM_wc_check_##NAME);
+    BENCHMARK(BM_wc_check_##NAME)->MinTime(2.0)->UseRealTime();
 
 BENCHMARK_WC(stream_256, check_stream<256>);
 BENCHMARK_WC(stream_4096, check_stream<4096>);
