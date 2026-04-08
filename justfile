@@ -57,5 +57,12 @@ test:
     g++ -std=c++23 test.cc -mavx2 -lgtest -lgtest_main -lpthread -o test_wc
     ./test_wc
 
+# You can check governor modes using `cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors`
+performance:
+    sudo cpupower frequency-set -g performance
+
+powersave:
+    sudo cpupower frequency-set -g powersave
+
 format:
     find . -iname '*.hh' -o -iname '*.cc' | xargs clang-format -i
